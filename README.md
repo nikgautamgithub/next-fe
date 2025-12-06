@@ -1,11 +1,13 @@
 # 🤓 Next Frontend
+
 > Because life's too short for messy codebases and "it works on my machine" excuses. No BS, just what works.
 
 ## 🎯 Why This Exists
 
 I got tired of:
+
 - 🤓 Code that makes you question your career choices
-- 🌾 "The previous dev did it this way" (the previous dev is now a ***farmer***)
+- 🌾 "The previous dev did it this way" (the previous dev is now a **farmer**)
 - 🤷 Mix of 5 different state management libraries because why not
 - 💀 No one knows where anything is
 - 🐛 Bugs that only appear on Tuesdays
@@ -43,6 +45,15 @@ Forms that don't suck. Validation that makes sense.
 **Sonner**  
 Toast notifications that look professional with zero effort.
 
+### Features
+
+**Role-Based Permissions System**  
+Full-featured permissions system available on the `permissions` branch. Includes permission guards, role management, and fine-grained access control. Checkout the branch to enable:
+
+```bash
+git checkout permissions
+```
+
 ## 🚫 What's NOT Here
 
 **tRPC** - My backend is FastAPI, not TypeScript. Wrong tool for the job.
@@ -56,6 +67,7 @@ Toast notifications that look professional with zero effort.
 **Regular lodash** - `lodash-es` has better tree-shaking. Smaller bundles = faster site.
 
 ## 🏗️ How It's Organized
+
 ```
 app/              # Pages (Next.js App Router)
 src/
@@ -73,19 +85,24 @@ Everything has a place. No "misc" or "helpers" dumping grounds.
 ## 🎯 My Patterns
 
 ### TanStack Query Factory Pattern
+
 Query keys in one place. No typos, easy invalidation, looks professional.
 
 ### Optimistic Updates
+
 UI updates instantly, rolls back if it fails. Feels fast because it is fast.
 
 ### lodash-es vs Native
+
 - Use lodash-es for: `isEmpty`, `debounce`, `get`, `groupBy`, safety checks
 - Use native for: `map`, `filter`, `forEach`, basic array stuff
 
 ### Component Structure
+
 Client components, memoized callbacks, debounced inputs, proper loading states.
 
 ## 🚀 Getting Started
+
 ```bash
 # Clone it
 git clone <repo-url>
@@ -108,6 +125,7 @@ bun dev
 ## 🎨 My Rules
 
 **Do:**
+
 - Keep components small
 - Handle loading/error states
 - Show toast notifications
@@ -115,6 +133,7 @@ bun dev
 - Memoize expensive stuff
 
 **Don't:**
+
 - Use `any` type
 - Fetch in useEffect
 - Store server state in useState
@@ -122,6 +141,7 @@ bun dev
 - Ship console.logs
 
 ## 🛠️ Quick Commands
+
 ```bash
 bun dev              # Start dev server
 bun run build        # Production build

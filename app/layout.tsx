@@ -1,4 +1,5 @@
 import { APP_CONFIG } from '@/lib/constants';
+import { PermissionProvider } from '@/lib/context/permissions';
 import { QueryProvider } from '@/lib/providers/query-provider';
 import { ToastProvider } from '@/lib/providers/toast-provider';
 import type { Metadata } from 'next';
@@ -29,8 +30,10 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <QueryProvider>
-          {children}
-          <ToastProvider />
+          <PermissionProvider>
+            {children}
+            <ToastProvider />
+          </PermissionProvider>
         </QueryProvider>
       </body>
     </html>

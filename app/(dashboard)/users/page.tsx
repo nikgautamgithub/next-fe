@@ -1,8 +1,10 @@
 'use client';
 
-import { EmptyState, LoadingSpinner, PageHeader } from '@/components/shared';
+import { EmptyState, LoadingSpinner, PageHeader, PermissionGuard, ProtectedRoute } from '@/components/shared';
 import { Button, Card, Input } from '@/components/ui';
+import { PERMISSIONS } from '@/lib/constants';
 import { useDebounce, useUsers } from '@/lib/hooks';
+import { useHasPermission } from '@/lib/hooks/common/usePermissions';
 import { formatters } from '@/lib/utils';
 import { isEmpty } from 'lodash-es';
 import { Plus } from 'lucide-react';
@@ -19,17 +21,20 @@ export default function UsersPage() {
   });
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Users"
-        description="Manage users and their permissions"
-        actions={
-          <Button>
-            <Plus className="mr-2 h-4 w-4" />
-            Add User
-          </Button>
-        }
-      />
+    <ProtectedRoute permission={PERMISSIONS.USERS.READ}>
+      <div className="space-y-6">
+        <PageHeader
+          title="Users"
+          description="Manage users and their permissions"
+          actions={
+            <PermissionGuard permission={PERMISSIONS.USERS.CREATE}>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Add User
+              </Button>
+            </PermissionGuard>
+          }
+        />
 
       <div className="flex items-center gap-4">
         <Input
@@ -66,10 +71,12 @@ export default function UsersPage() {
             }
             action={
               !debouncedSearch && (
-                <Button>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add User
-                </Button>
+                <PermissionGuard permission={PERMISSIONS.USERS.CREATE}>
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add User
+                  </Button>
+                </PermissionGuard>
               )
             }
           />
@@ -100,6 +107,7 @@ export default function UsersPage() {
           ))}
         </div>
       )}
-    </div>
+      </div>
+    </ProtectedRoute>
   );
 }

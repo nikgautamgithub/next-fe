@@ -1,3 +1,4 @@
 export * from './config';
-export * from './routes';
+export * from './permissions';
 export * from './query-keys';
+export * from './routes';

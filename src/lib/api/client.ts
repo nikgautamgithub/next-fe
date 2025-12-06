@@ -1,9 +1,9 @@
 import axios from 'axios';
 import {
-  requestInterceptor,
   requestErrorInterceptor,
-  responseInterceptor,
+  requestInterceptor,
   responseErrorInterceptor,
+  responseInterceptor,
 } from './interceptors';
 
 const apiClient = axios.create({

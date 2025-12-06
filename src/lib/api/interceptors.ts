@@ -1,5 +1,5 @@
-import { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { ApiError } from '@/types/api/common.types';
+import { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
 export function requestInterceptor(config: InternalAxiosRequestConfig) {
   const isDev = process.env.NODE_ENV === 'development';

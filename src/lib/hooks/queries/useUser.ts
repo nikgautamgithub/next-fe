@@ -1,8 +1,8 @@
-import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import apiClient from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
 import { queryKeys } from '@/lib/constants/query-keys';
 import { User } from '@/types/api/user.types';
+import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 import { isNil } from 'lodash-es';
 
 export function useUser(

@@ -1,5 +1,5 @@
 import { format as formatDate, parseISO } from 'date-fns';
-import { capitalize, trim, isEmpty, isNil } from 'lodash-es';
+import { capitalize, isEmpty, isNil, trim } from 'lodash-es';
 
 export const formatters = {
   currency: (value: number | null | undefined, currency: string = 'USD'): string => {

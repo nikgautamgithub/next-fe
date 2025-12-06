@@ -1,9 +1,9 @@
-import { useMutation, useQueryClient, UseMutationOptions } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import apiClient from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
 import { queryKeys } from '@/lib/constants/query-keys';
 import { ApiError } from '@/types/api/common.types';
+import { useMutation, UseMutationOptions, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 export function useDeleteUser(
   options?: Omit<UseMutationOptions<void, ApiError, string>, 'mutationFn'>

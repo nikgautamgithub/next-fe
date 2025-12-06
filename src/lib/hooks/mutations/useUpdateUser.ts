@@ -1,10 +1,10 @@
-import { useMutation, useQueryClient, UseMutationOptions } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import apiClient from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
 import { queryKeys } from '@/lib/constants/query-keys';
-import { UpdateUserPayload, User } from '@/types/api/user.types';
 import { ApiError, PaginatedResponse } from '@/types/api/common.types';
+import { UpdateUserPayload, User } from '@/types/api/user.types';
+import { useMutation, UseMutationOptions, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 
 interface UpdateUserVariables {
   id: string;

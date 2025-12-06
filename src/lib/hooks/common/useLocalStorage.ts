@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
 import { isNil } from 'lodash-es';
+import { useEffect, useState } from 'react';
 
 export function useLocalStorage<T>(key: string, initialValue: T) {
   const [storedValue, setStoredValue] = useState<T>(() => {

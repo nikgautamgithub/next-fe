@@ -1,7 +1,13 @@
 import apiClient from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
 import { queryKeys } from '@/lib/constants';
-import { ApiError, CreateUserPayload, PaginatedResponse, UpdateUserPayload, User } from '@/types/api';
+import {
+  ApiError,
+  CreateUserPayload,
+  PaginatedResponse,
+  UpdateUserPayload,
+  User,
+} from '@/types/api';
 import { useMutation, UseMutationOptions, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 

@@ -1,36 +1,165 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🤓 Next Frontend
+> Because life's too short for messy codebases and "it works on my machine" excuses. No BS, just what works.
 
-## Getting Started
+## 🎯 Why This Exists
 
-First, run the development server:
+I got tired of:
+- 🤓 Code that makes you question your career choices
+- 🌾 "The previous dev did it this way" (the previous dev is now a ***farmer***)
+- 🤷 Mix of 5 different state management libraries because why not
+- 💀 No one knows where anything is
+- 🐛 Bugs that only appear on Tuesdays
 
+So I made this for myself. My personal starter kit that actually makes sense.
+
+## ✨ What's Inside
+
+### The Stack
+
+**Next.js (App Router)**  
+Fast, modern, and I don't have to fight the framework.
+
+**TypeScript (Strict Mode)**  
+If it compiles, it (**usually**) works. Saves me hours of debugging.
+
+**Bun**  
+Because npm is slow and I like my installs fast.
+
+**Tailwind CSS**  
+Utility classes > fighting CSS. Dark mode ready because obviously.
+
+**Axios + TanStack Query**  
+My API layer. Axios for requests, TanStack Query for caching/state. No more useEffect maggie.
+
+**lodash-es**  
+For when JavaScript makes simple things hard. Tree-shakeable so my bundles stay small.
+
+**shadcn/ui**  
+Copy-paste components that look good out of the box. Customizable without tears.
+
+**React Hook Form + Zod**  
+Forms that don't suck. Validation that makes sense.
+
+**Sonner**  
+Toast notifications that look professional with zero effort.
+
+## 🚫 What's NOT Here
+
+**tRPC** - My backend is FastAPI, not TypeScript. Wrong tool for the job.
+
+**Prisma** - Backend handles the database. Frontend stays in its lane.
+
+**NextAuth** - FastAPI already does auth with JWT cookies. No duplication needed.
+
+**Redux** - TanStack Query handles server state. I will only add Zustand if I need client-only global state, which I don't this time.
+
+**Regular lodash** - `lodash-es` has better tree-shaking. Smaller bundles = faster site.
+
+## 🏗️ How It's Organized
+```
+app/              # Pages (Next.js App Router)
+src/
+├── components/       # UI components (organized by feature)
+├── lib/
+│   ├── api/          # Axios setup, API endpoints
+│   ├── hooks/        # Custom hooks (queries, mutations)
+│   ├── utils/        # Helper functions
+│   └── constants/    # Config, routes, etc.
+└── types/            # TypeScript types
+```
+
+Everything has a place. No "misc" or "helpers" dumping grounds.
+
+## 🎯 My Patterns
+
+### TanStack Query Factory Pattern
+Query keys in one place. No typos, easy invalidation, looks professional.
+
+### Optimistic Updates
+UI updates instantly, rolls back if it fails. Feels fast because it is fast.
+
+### lodash-es vs Native
+- Use lodash-es for: `isEmpty`, `debounce`, `get`, `groupBy`, safety checks
+- Use native for: `map`, `filter`, `forEach`, basic array stuff
+
+### Component Structure
+Client components, memoized callbacks, debounced inputs, proper loading states.
+
+## 🚀 Getting Started
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+# Clone it
+git clone <repo-url>
+cd project
+
+# Install (fast with Bun)
+bun install
+
+# Setup environment
+cp .env.example .env.local
+# Edit with your backend URL
+
+# Add UI components you need
+bunx shadcn@latest add button input card dialog
+
+# Start coding
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🎨 My Rules
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**Do:**
+- Keep components small
+- Handle loading/error states
+- Show toast notifications
+- Use TypeScript properly
+- Memoize expensive stuff
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+**Don't:**
+- Use `any` type
+- Fetch in useEffect
+- Store server state in useState
+- Commit secrets
+- Ship console.logs
 
-## Learn More
+## 🛠️ Quick Commands
+```bash
+bun dev              # Start dev server
+bun run build        # Production build
+bun run lint         # Check code
+bun run format       # Prettier Format
+```
 
-To learn more about Next.js, take a look at the following resources:
+## 💡 Why These Choices?
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+**Bun over npm** - Speed. That's it.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+**lodash-es over lodash** - Tree-shaking = smaller bundles.
 
-## Deploy on Vercel
+**TanStack Query** - Best server state library. Period.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+**App Router** - The future of Next.js. Learn it now.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**shadcn/ui** - Components I can customize without fighting dependencies.
+
+**Strict TypeScript** - Catch bugs at compile time, not production.
+
+## 📝 Notes to Future Me
+
+- FastAPI backend handles auth, don't duplicate it
+- Use query keys factory, you'll thank yourself later
+- Optimistic updates make everything feel faster
+- Keep components in `features/` folder by domain
+- Don't overthink it, just ship
+
+## 🎯 Backend Context
+
+- FastAPI backend (separate repo/server)
+- JWT tokens in HTTP-only cookies
+- Next.js API routes proxy to FastAPI (hides real endpoints)
+- Frontend just checks auth state, backend does the work
+
+---
+
+**This is my template. There are many like it, but this one is mine.** 🚀
+
+Built for speed, maintained for sanity, optimized for 2 AM debugging sessions.

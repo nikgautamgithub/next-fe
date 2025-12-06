@@ -1,0 +1,373 @@
+---
+description: UI component usage and Shadcn/ui patterns
+globs: ['src/components/**/*']
+alwaysApply: false
+---
+
+# UI Components & Shadcn/ui Guidelines
+
+## Component Import Pattern
+
+Always use index exports for cleaner imports:
+
+```typescript
+// Good - from index
+import { Button, Card, Input, Label } from '@/components/ui';
+import { PageHeader, LoadingSpinner } from '@/components/shared';
+
+// Bad - individual imports
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+```
+
+## Shadcn/ui Components
+
+### Button Component
+
+```typescript
+import { Button } from '@/components/ui';
+
+// Variants
+<Button variant="default">Default</Button>
+<Button variant="destructive">Delete</Button>
+<Button variant="outline">Cancel</Button>
+<Button variant="ghost">Ghost</Button>
+<Button variant="link">Link</Button>
+
+// Sizes
+<Button size="default">Default</Button>
+<Button size="sm">Small</Button>
+<Button size="lg">Large</Button>
+<Button size="icon"><Icon /></Button>
+
+// With icon
+<Button>
+  <Plus className="mr-2 h-4 w-4" />
+  Add User
+</Button>
+
+// Loading state
+<Button disabled={isLoading}>
+  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+  {isLoading ? 'Loading...' : 'Submit'}
+</Button>
+```
+
+### Card Component
+
+```typescript
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui';
+
+<Card>
+  <CardHeader>
+    <CardTitle>Card Title</CardTitle>
+    <CardDescription>Card description</CardDescription>
+  </CardHeader>
+  <CardContent>
+    {/* Content */}
+  </CardContent>
+  <CardFooter>
+    {/* Actions */}
+  </CardFooter>
+</Card>
+```
+
+### Form Components
+
+```typescript
+import { Input, Label } from '@/components/ui';
+
+<div className="space-y-2">
+  <Label htmlFor="email">Email</Label>
+  <Input
+    id="email"
+    type="email"
+    placeholder="john.doe@example.com"
+    autoComplete="email"
+    {...register('email')}
+  />
+  {errors.email && (
+    <p className="text-destructive text-sm">{errors.email.message}</p>
+  )}
+</div>
+```
+
+### Dialog Component
+
+```typescript
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui';
+
+<Dialog>
+  <DialogTrigger asChild>
+    <Button>Open Dialog</Button>
+  </DialogTrigger>
+  <DialogContent>
+    <DialogHeader>
+      <DialogTitle>Are you sure?</DialogTitle>
+      <DialogDescription>
+        This action cannot be undone.
+      </DialogDescription>
+    </DialogHeader>
+    {/* Dialog content */}
+  </DialogContent>
+</Dialog>
+```
+
+### Table Component
+
+```typescript
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui';
+
+<Table>
+  <TableHeader>
+    <TableRow>
+      <TableHead>Name</TableHead>
+      <TableHead>Email</TableHead>
+      <TableHead>Role</TableHead>
+    </TableRow>
+  </TableHeader>
+  <TableBody>
+    {users.map((user) => (
+      <TableRow key={user.id}>
+        <TableCell>{user.name}</TableCell>
+        <TableCell>{user.email}</TableCell>
+        <TableCell>{user.role}</TableCell>
+      </TableRow>
+    ))}
+  </TableBody>
+</Table>
+```
+
+## Shared Components
+
+### LoadingSpinner
+
+```typescript
+import { LoadingSpinner } from '@/components/shared';
+
+// Sizes
+<LoadingSpinner size="sm" />
+<LoadingSpinner size="md" />
+<LoadingSpinner size="lg" />
+
+// With text
+<LoadingSpinner text="Loading users..." />
+
+// Custom styling
+<LoadingSpinner className="text-primary" />
+```
+
+### EmptyState
+
+```typescript
+import { EmptyState } from '@/components/shared';
+
+<EmptyState
+  title="No users found"
+  description="Get started by creating your first user"
+  action={
+    <Button>
+      <Plus className="mr-2 h-4 w-4" />
+      Add User
+    </Button>
+  }
+/>
+```
+
+### PageHeader
+
+```typescript
+import { PageHeader } from '@/components/shared';
+
+<PageHeader
+  title="Users"
+  description="Manage users and their permissions"
+  actions={
+    <Button>
+      <Plus className="mr-2 h-4 w-4" />
+      Add User
+    </Button>
+  }
+/>
+```
+
+### ErrorBoundary
+
+```typescript
+import { ErrorBoundary } from '@/components/shared';
+
+<ErrorBoundary fallback={<ErrorFallback />}>
+  <YourComponent />
+</ErrorBoundary>
+```
+
+## Layout Components
+
+### DashboardLayout
+
+```typescript
+import { DashboardLayout } from '@/components/layouts';
+
+export default function Layout({ children }: { children: React.ReactNode }) {
+  return <DashboardLayout>{children}</DashboardLayout>;
+}
+```
+
+### AppHeader
+
+Automatically included in DashboardLayout. Navigation items defined in component.
+
+## Icons (Lucide React)
+
+```typescript
+import { Plus, Edit, Trash2, Loader2, Check, X } from 'lucide-react';
+
+// Standard size
+<Plus className="h-4 w-4" />
+
+// With button
+<Button>
+  <Plus className="mr-2 h-4 w-4" />
+  Add Item
+</Button>
+
+// Loading icon
+<Loader2 className="h-4 w-4 animate-spin" />
+```
+
+## Toast Notifications (Sonner)
+
+```typescript
+import { toast } from 'sonner';
+
+// Success
+toast.success('User created successfully', {
+  description: 'John Doe has been added to the system',
+});
+
+// Error
+toast.error('Failed to create user', {
+  description: error.message || 'An unexpected error occurred',
+});
+
+// Loading
+const toastId = toast.loading('Creating user...');
+// Later
+toast.success('User created', { id: toastId });
+
+// Info
+toast.info('Changes saved', {
+  description: 'Your preferences have been updated',
+});
+
+// Warning
+toast.warning('Unsaved changes', {
+  description: 'You have unsaved changes that will be lost',
+});
+```
+
+## Styling Patterns
+
+### Tailwind Class Organization
+
+Order classes logically:
+
+1. Layout (flex, grid, etc.)
+2. Spacing (p-, m-, gap-, etc.)
+3. Sizing (w-, h-, max-w-, etc.)
+4. Typography (text-, font-, etc.)
+5. Colors (bg-, text-, border-)
+6. Effects (shadow-, opacity-, etc.)
+7. Responsive modifiers (md:, lg:, etc.)
+
+```typescript
+<div className="flex items-center justify-between gap-4 rounded-lg border bg-card p-6 shadow-sm">
+  {/* content */}
+</div>
+```
+
+### Common Utility Classes
+
+```typescript
+// Container
+className = 'container mx-auto px-4';
+
+// Card spacing
+className = 'space-y-4';
+
+// Flex layouts
+className = 'flex items-center justify-between';
+className = 'flex flex-col gap-4';
+
+// Grid layouts
+className = 'grid gap-4 md:grid-cols-2 lg:grid-cols-3';
+
+// Text
+className = 'text-sm text-muted-foreground';
+className = 'text-lg font-semibold';
+
+// Hover states
+className = 'hover:bg-accent hover:text-accent-foreground';
+
+// Transitions
+className = 'transition-colors';
+```
+
+### Responsive Design
+
+```typescript
+// Mobile first approach
+className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
+
+// Hide/show on breakpoints
+className = 'hidden md:block';
+className = 'block md:hidden';
+
+// Responsive spacing
+className = 'p-4 md:p-6 lg:p-8';
+```
+
+## Accessibility
+
+### Form Labels
+
+Always associate labels with inputs:
+
+```typescript
+<Label htmlFor="email">Email</Label>
+<Input id="email" type="email" {...register('email')} />
+```
+
+### Button States
+
+Disable buttons during loading:
+
+```typescript
+<Button disabled={isLoading || isSubmitting}>
+  Submit
+</Button>
+```
+
+### Keyboard Navigation
+
+Ensure all interactive elements are keyboard accessible:
+
+```typescript
+<button
+  type="button"
+  onClick={handleClick}
+  onKeyDown={(e) => e.key === 'Enter' && handleClick()}
+>
+  Action
+</button>
+```
+
+### ARIA Labels
+
+Add descriptive ARIA labels for icon-only buttons:
+
+```typescript
+<Button size="icon" aria-label="Delete user">
+  <Trash2 className="h-4 w-4" />
+</Button>
+```

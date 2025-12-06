@@ -1,0 +1,72 @@
+---
+description: Core architecture patterns and project structure guidelines
+alwaysApply: true
+---
+
+# Architecture Guidelines
+
+## Project Structure
+
+This is a Next.js 16+ application using the App Router with a separate FastAPI backend.
+
+```
+src/
+├── app/                    # Next.js App Router
+│   ├── (auth)/            # Auth route group (no dashboard layout)
+│   ├── (dashboard)/       # Dashboard route group (with layout)
+│   └── api/               # API proxy routes to FastAPI
+├── components/
+│   ├── ui/                # shadcn/ui base components
+│   ├── features/          # Feature-specific components
+│   ├── layouts/           # Layout components
+│   └── shared/            # Reusable shared components
+├── lib/
+│   ├── api/               # API client and configuration
+│   ├── hooks/             # Custom React hooks
+│   │   ├── queries/       # TanStack Query hooks (GET)
+│   │   ├── mutations/     # TanStack Mutation hooks (POST/PUT/DELETE)
+│   │   └── common/        # Utility hooks
+│   ├── utils/             # Utility functions
+│   ├── schemas/           # Zod validation schemas
+│   └── constants/         # App constants
+└── types/
+    ├── api/               # API response/request types
+    └── models/            # Domain model types
+```
+
+## Key Architectural Principles
+
+### 1. Separation of Concerns
+
+- API layer handles all HTTP communication
+- Hooks manage server state (queries/mutations)
+- Components focus on UI and user interactions
+- Utils contain pure, reusable functions
+
+### 2. Backend Communication
+
+- **Never call FastAPI directly from client components**
+- Always use Next.js API routes (`/api/[...path]`) as a proxy
+- Proxy hides backend endpoints for security
+- Authentication via JWT in HTTP-only cookies
+
+### 3. State Management Strategy
+
+- **Server State**: TanStack Query (queries/mutations)
+- **Client State**: useState, useReducer for component-level
+- **Global Client State**: React Context when needed
+- **NO Redux/Zustand for server state** - that's what TanStack Query is for
+
+### 4. Type Safety
+
+- TypeScript strict mode enabled
+- Define types for all API responses/requests in `types/api/`
+- Use Zod schemas for runtime validation
+- Infer types from Zod schemas using `z.infer<typeof schema>`
+
+### 5. Route Organization
+
+- Use route groups: `(auth)` and `(dashboard)`
+- Route groups don't affect URL structure
+- Each route group can have its own layout
+- Proxy handles authentication and redirects at the network boundary

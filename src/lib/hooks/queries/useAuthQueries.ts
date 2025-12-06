@@ -1,7 +1,7 @@
 import apiClient from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
-import { queryKeys } from '@/lib/constants/query-keys';
-import { AuthUser } from '@/types/api/auth.types';
+import { queryKeys } from '@/lib/constants';
+import { AuthUser } from '@/types/api';
 import { useQuery, UseQueryOptions } from '@tanstack/react-query';
 
 export function useAuthUser(options?: Omit<UseQueryOptions<AuthUser>, 'queryKey' | 'queryFn'>) {

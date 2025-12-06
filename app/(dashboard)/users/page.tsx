@@ -1,17 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus } from 'lucide-react';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { LoadingSpinner } from '@/components/shared/LoadingSpinner';
-import { EmptyState } from '@/components/shared/EmptyState';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card } from '@/components/ui/card';
-import { useUsers } from '@/lib/hooks/queries/useUsers';
-import { useDebounce } from '@/lib/hooks/common/useDebounce';
-import { formatters } from '@/lib/utils/format';
+import { EmptyState, LoadingSpinner, PageHeader } from '@/components/shared';
+import { Button, Card, Input } from '@/components/ui';
+import { useDebounce, useUsers } from '@/lib/hooks';
+import { formatters } from '@/lib/utils';
 import { isEmpty } from 'lodash-es';
+import { Plus } from 'lucide-react';
+import { useState } from 'react';
 
 export default function UsersPage() {
   const [search, setSearch] = useState('');

@@ -1,0 +1,416 @@
+---
+description: React and Next.js component patterns and best practices
+globs: ['**/*.tsx', '**/*.jsx']
+alwaysApply: false
+---
+
+# React & Next.js Patterns
+
+## Component Guidelines
+
+### Server vs Client Components
+
+**Default to Server Components** unless you need:
+
+- Event listeners (onClick, onChange, etc.)
+- Browser APIs (window, localStorage, etc.)
+- State (useState, useReducer, etc.)
+- Effects (useEffect, useLayoutEffect)
+- Client-side-only libraries
+
+**Mark client components** with `'use client'` directive at the top:
+
+```typescript
+'use client';
+
+import { useState } from 'react';
+
+export function InteractiveComponent() {
+  const [count, setCount] = useState(0);
+  // ...
+}
+```
+
+### Component Props
+
+Always define props with TypeScript interfaces:
+
+```typescript
+interface UserCardProps {
+  user: User;
+  onEdit?: (userId: string) => void;
+  className?: string;
+}
+
+export function UserCard({ user, onEdit, className }: UserCardProps) {
+  // ...
+}
+```
+
+### Performance Optimization
+
+Use `useMemo` for expensive computations:
+
+```typescript
+const sortedUsers = useMemo(() => users.sort((a, b) => a.name.localeCompare(b.name)), [users]);
+```
+
+Use `useCallback` for callback functions passed as props:
+
+```typescript
+const handleSubmit = useCallback(
+  (data: FormData) => {
+    mutation.mutate(data);
+  },
+  [mutation]
+);
+```
+
+Use `React.memo()` strategically for expensive renders:
+
+```typescript
+export const ExpensiveComponent = React.memo(function ExpensiveComponent({ data }: Props) {
+  // ...
+});
+```
+
+## TanStack Query Patterns
+
+### Query Client Configuration
+
+**Smart Retry Logic:**
+
+The QueryProvider should use intelligent retry that doesn't retry on 4xx errors (client errors):
+
+```typescript
+// In QueryProvider
+defaultOptions: {
+  queries: {
+    retry: (failureCount, error) => {
+      // Don't retry on 4xx errors (client errors)
+      if (error instanceof Error && 'status' in error) {
+        const status = (error as any).status;
+        if (status >= 400 && status < 500) {
+          return false; // Don't retry client errors
+        }
+      }
+      return failureCount < 3; // Retry up to 3 times for server errors
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+  },
+  mutations: {
+    retry: false, // Never retry mutations by default
+  },
+}
+```
+
+### Query Keys Factory Pattern
+
+Always use a factory pattern for query keys:
+
+```typescript
+// lib/constants/query-keys.ts
+export const userKeys = {
+  all: ['users'] as const,
+  lists: () => [...userKeys.all, 'list'] as const,
+  list: (filters: UserFilters) => [...userKeys.lists(), filters] as const,
+  details: () => [...userKeys.all, 'detail'] as const,
+  detail: (id: string) => [...userKeys.details(), id] as const,
+};
+```
+
+### Query Hooks
+
+Create custom hooks for all queries:
+
+```typescript
+export function useUsers(
+  filters: UserFilters = {},
+  options?: Omit<UseQueryOptions<PaginatedResponse<User>>, 'queryKey' | 'queryFn'>
+) {
+  return useQuery<PaginatedResponse<User>>({
+    queryKey: queryKeys.users.list(filters),
+    queryFn: async () => {
+      const { data } = await apiClient.get(API_ENDPOINTS.USERS.LIST, {
+        params: filters,
+      });
+      return data;
+    },
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
+    placeholderData: (previousData) => previousData, // Keep previous data during refetch (smoother UX)
+    ...options,
+  });
+}
+```
+
+**Key Options:**
+
+- `placeholderData: (previousData) => previousData` - Shows previous data while refetching (avoids loading states)
+- `retry: false` - Don't retry for auth-sensitive queries
+- `retry: (failureCount, error) => { ... }` - Smart retry (don't retry 4xx errors)
+
+### Mutation Hooks with Optimistic Updates
+
+Implement optimistic updates for better UX:
+
+```typescript
+export function useUpdateUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ id, payload }: UpdateUserVariables) => {
+      const { data } = await apiClient.put(API_ENDPOINTS.USERS.UPDATE(id), payload);
+      return data;
+    },
+    onMutate: async ({ id, payload }) => {
+      // Cancel outgoing queries
+      await queryClient.cancelQueries({ queryKey: queryKeys.users.detail(id) });
+
+      // Snapshot previous value
+      const previousUser = queryClient.getQueryData<User>(queryKeys.users.detail(id));
+
+      // Optimistically update
+      if (previousUser) {
+        queryClient.setQueryData<User>(queryKeys.users.detail(id), {
+          ...previousUser,
+          ...payload,
+        });
+      }
+
+      return { previousUser };
+    },
+    onError: (error, { id }, context) => {
+      // Rollback on error
+      if (context?.previousUser) {
+        queryClient.setQueryData(queryKeys.users.detail(id), context.previousUser);
+      }
+      toast.error('Failed to update user', {
+        description: error.message,
+      });
+    },
+    onSuccess: (data, { id }) => {
+      queryClient.setQueryData(queryKeys.users.detail(id), data);
+      toast.success('User updated successfully');
+    },
+    onSettled: (_, __, { id }) => {
+      // Always invalidate after mutation
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.detail(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() });
+    },
+  });
+}
+```
+
+## Form Handling
+
+### React Hook Form + Zod
+
+Always use React Hook Form with Zod resolver:
+
+```typescript
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { loginSchema, LoginFormData } from '@/lib/schemas';
+
+export function LoginForm() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  function onSubmit(data: LoginFormData) {
+    mutation.mutate(data);
+  }
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      {/* form fields */}
+    </form>
+  );
+}
+```
+
+## Next.js Specific
+
+### Data Fetching
+
+- Use TanStack Query hooks in client components
+- Use async/await in Server Components when needed
+- Never fetch on client what can be fetched on server
+
+### Image Optimization
+
+Always use Next.js Image component:
+
+```typescript
+import Image from 'next/image';
+
+<Image
+  src="/avatar.jpg"
+  alt="User avatar"
+  width={48}
+  height={48}
+  priority // for above-the-fold images
+/>
+```
+
+### Link Navigation
+
+Always use Next.js Link for internal navigation:
+
+```typescript
+import Link from 'next/link';
+
+<Link href={ROUTES.DASHBOARD.USERS.LIST}>
+  View Users
+</Link>
+```
+
+## Error Handling
+
+### Component Error Boundaries
+
+Every major feature should have error boundary:
+
+```typescript
+import { ErrorBoundary } from '@/components/shared';
+
+<ErrorBoundary fallback={<ErrorFallback />}>
+  <YourComponent />
+</ErrorBoundary>
+```
+
+### Loading States
+
+**Always use Skeleton loaders instead of LoadingSpinner whenever possible.**
+
+Skeletons provide better UX by showing content structure while loading:
+
+```typescript
+import { Skeleton } from '@/components/ui/skeleton';
+
+// ✅ Good - Use skeleton to show structure
+{isLoading ? (
+  <div className="space-y-4">
+    {Array.from({ length: 3 }).map((_, i) => (
+      <Card key={i}>
+        <CardHeader>
+          <Skeleton className="h-6 w-48" />
+          <Skeleton className="h-4 w-32 mt-2" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-3/4 mt-2" />
+        </CardContent>
+      </Card>
+    ))}
+  </div>
+) : (
+  <DataDisplay data={data} />
+)}
+
+// ❌ Avoid - Generic spinner doesn't show structure
+{isLoading && <LoadingSpinner />}
+```
+
+**Use LoadingSpinner only when:**
+
+- Skeleton structure would be too complex
+- Loading is very brief (< 500ms)
+- Inline button loading states
+- Modal/dialog loading overlays
+
+### Page Structure with Error Handling
+
+Always structure pages with proper error handling:
+
+```typescript
+export default function UsersPage() {
+  const [search, setSearch] = useState('');
+  const debouncedSearch = useDebounce(search, 300);
+
+  const { data, isLoading, isError, error } = useUsers({
+    search: debouncedSearch || undefined,
+    page: 1,
+    limit: 10,
+  });
+
+  return (
+    <div className="space-y-6">
+      {/* Page Header - Always visible */}
+      <PageHeader
+        title="Users"
+        description="Manage users and their permissions"
+        actions={<Button>Add User</Button>}
+      />
+
+      {/* Search/Filter Section - Always visible */}
+      <div className="flex items-center gap-4">
+        <Input
+          placeholder="Search users..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      {/* Content Section - Conditional rendering */}
+      {isLoading && (
+        <UsersListSkeleton /> // ✅ Use skeleton
+      )}
+
+      {isError && (
+        <Card className="p-6">
+          <EmptyState
+            title="Error loading users"
+            description={error?.message || 'An unexpected error occurred'}
+            action={
+              <Button onClick={() => refetch()}>
+                Try Again
+              </Button>
+            }
+          />
+        </Card>
+      )}
+
+      {!isLoading && !isError && isEmpty(data?.data) && (
+        <Card className="p-6">
+          <EmptyState
+            title="No users found"
+            description="Get started by creating your first user"
+            action={<Button>Add User</Button>}
+          />
+        </Card>
+      )}
+
+      {!isLoading && !isError && !isEmpty(data?.data) && (
+        <UsersList data={data.data} />
+      )}
+    </div>
+  );
+}
+```
+
+**Page Structure Pattern:**
+
+1. **Page Header** - Always visible (title, description, actions)
+2. **Filters/Search** - Always visible (user can interact while loading)
+3. **Content** - Conditional based on state:
+   - Loading → Skeleton (shows structure)
+   - Error → Error state with retry option
+   - Empty → Empty state with action
+   - Success → Data display
+
+This structure ensures:
+
+- ✅ No layout shift (header/filters always visible)
+- ✅ Clear visual feedback (skeleton shows what's coming)
+- ✅ Better UX (can interact with filters while loading)
+- ✅ Proper error handling with retry options

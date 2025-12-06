@@ -1,0 +1,274 @@
+---
+description: Code style conventions and formatting rules
+alwaysApply: true
+---
+
+# Code Style Guidelines
+
+## General Style
+
+- **Indentation**: Use TABS (not spaces)
+- **Quotes**: Single quotes for strings (except to avoid escaping)
+- **Semicolons**: Omit semicolons (unless required for disambiguation)
+- **Equality**: Always use strict equality `===` (never `==`)
+- **Line Length**: Limit to 80-100 characters when reasonable
+- **Trailing Commas**: Use trailing commas in multiline objects/arrays
+
+## Naming Conventions
+
+### Files and Directories
+
+- **Component Files**: Use `PascalCase`
+  - Components: `UserProfile.tsx`, `PageHeader.tsx`
+  - Layouts: `DashboardLayout.tsx`, `AppHeader.tsx`
+- **Non-Component Files**: Use `kebab-case` or `camelCase`
+  - Hooks: `useDebounce.ts`, `useAuth.ts`
+  - Utils: `format.ts`, `validation.ts`
+  - Schemas: `auth.schemas.ts`, `user.schemas.ts`
+  - Config: `query-keys.ts`, `endpoints.ts`
+- **Directories**: Use `kebab-case`
+  - `(auth)/`, `(dashboard)/`
+  - Folders with hyphens: Keep as-is from route structure
+
+### Code Identifiers
+
+- **PascalCase** for:
+  - Components: `UserProfile`, `LoginForm`
+  - Types/Interfaces: `User`, `ApiResponse<T>`
+  - Enums: `UserRole`
+- **camelCase** for:
+  - Variables: `firstName`, `userCount`
+  - Functions: `formatDate`, `validateEmail`
+  - Hooks: `useAuth`, `useUsers`
+  - Props: `isLoading`, `onSubmit`
+- **UPPERCASE** for:
+  - Constants: `API_ENDPOINTS`, `ROUTES`
+  - Environment variables: `NEXT_PUBLIC_API_URL`
+
+### Specific Patterns
+
+- **Event handlers**: Prefix with `handle`
+  - `handleClick`, `handleSubmit`, `handleChange`
+- **Boolean variables**: Prefix with verbs
+  - `isLoading`, `hasError`, `canSubmit`, `shouldRender`
+- **Custom hooks**: Always prefix with `use`
+  - `useAuth`, `useDebounce`, `useLocalStorage`
+
+## Import Organization
+
+### Index File Rule (CRITICAL)
+
+**ALWAYS use index imports when an index file exists in a folder.**
+
+```typescript
+// ✅ GOOD - Using index file
+import { Button, Card, Input } from '@/components/ui';
+import { PageHeader, LoadingSpinner } from '@/components/shared';
+import { useUsers, useDebounce } from '@/lib/hooks';
+import { formatters, validators } from '@/lib/utils';
+import { loginSchema } from '@/lib/schemas';
+
+// ❌ BAD - Direct file imports (when index exists)
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { useUsers } from '@/lib/hooks/queries/useUserQueries';
+import { useDebounce } from '@/lib/hooks/common/useDebounce';
+import { formatters } from '@/lib/utils/format';
+```
+
+**Why:**
+
+- ✅ Cleaner, shorter imports
+- ✅ Easier refactoring (change file location without updating imports)
+- ✅ Consistent patterns across codebase
+- ✅ Better tree-shaking when configured properly
+
+**When index files exist (use them!):**
+
+- ✅ `@/components/ui` - Has index.ts
+- ✅ `@/components/shared` - Has index.ts
+- ✅ `@/components/layouts` - Has index.ts
+- ✅ `@/lib/hooks` - Has index.ts (exports queries, mutations, common)
+- ✅ `@/lib/utils` - Has index.ts
+- ✅ `@/lib/schemas` - Has index.ts
+- ✅ `@/lib/constants` - Has index.ts
+
+### Import Group Organization
+
+Organize imports in logical groups (separated by blank lines), roughly alphabetical within each group:
+
+**Group 1: Internal Components & UI**
+
+- UI components from `@/components/ui` (use index!)
+- Shared/layout components from `@/components/shared`, `@/components/layouts` (use index!)
+- Feature components from `@/components/features`
+
+**Group 2: Internal Utilities & Logic**
+
+- Constants from `@/lib/constants` (use index!)
+- Hooks from `@/lib/hooks` (use index!)
+- Schemas from `@/lib/schemas` (use index!)
+- Utils from `@/lib/utils` (use index!)
+- Types from `@/types` (use index when available)
+
+**Group 3: External Libraries**
+
+- Third-party libraries (lodash-es, lucide-react, etc.)
+- Usually alphabetical
+
+**Group 4: Next.js/React Core**
+
+- Next.js imports (next/link, next/navigation)
+- React imports (react, react-dom)
+
+**Example (from actual codebase):**
+
+```typescript
+import {
+  Button,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  Input,
+  Label,
+} from '@/components/ui';
+import { PageHeader } from '@/components/shared';
+import { ROUTES } from '@/lib/constants'; // ✅ Using index
+import { useLogin } from '@/lib/hooks'; // ✅ Using index
+import { LoginFormData, loginSchema } from '@/lib/schemas'; // ✅ Using index
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader2 } from 'lucide-react';
+import Link from 'next/link';
+import { useForm } from 'react-hook-form';
+```
+
+**Note:**
+
+- Always use index imports when index files exist
+- Prettier and auto-formatting may adjust the exact order
+- The goal is logical grouping with index imports, not strict ordering
+
+## Component Structure
+
+### Functional Components
+
+**Always use the `function` keyword** (not arrow functions) for components:
+
+**Why `function` over arrow functions?**
+
+- ✅ **Better debugging**: Named functions show clearly in React DevTools and stack traces
+- ✅ **Hoisting**: Can be used before declaration if needed
+- ✅ **Consistency**: Matches React documentation and community standards
+- ✅ **Named exports**: `export function` is clearer than `export const`
+
+```typescript
+// Good - function keyword
+export function UserProfile({ userId }: UserProfileProps) {
+  const [state, setState] = useState();
+  const { data } = useUser(userId);
+  return <div>...</div>;
+}
+
+// Bad - arrow function
+export const UserProfile = ({ userId }: UserProfileProps) => {
+  return <div>...</div>;
+};
+```
+
+**Component Structure:**
+
+```typescript
+export function UserProfile({ userId }: UserProfileProps) {
+  // 1. React hooks (useState, useEffect, etc.)
+  const [state, setState] = useState();
+
+  // 2. Custom/query/mutation hooks
+  const { data } = useUser(userId);
+
+  // 3. Derived values (useMemo, useCallback)
+  const fullName = useMemo(() => formatFullName(data), [data]);
+
+  // 4. Event handlers
+  function handleSubmit() {
+    // ...
+  }
+
+  // 5. Render
+  return <div>...</div>;
+}
+```
+
+### Hook Order (Within Components)
+
+**This refers to the order hooks are CALLED inside a component** (not import order).
+
+Organize hooks in this sequence for consistency and readability:
+
+1. **React core hooks**: `useState`, `useEffect`, `useReducer`, `useContext`
+2. **Custom utility hooks**: `useDebounce`, `useMediaQuery`, `useLocalStorage`
+3. **Data hooks**: Query hooks (`useUsers`) and mutation hooks (`useCreateUser`)
+4. **Derived values**: `useMemo`, `useCallback`
+5. **Event handlers**: Regular functions (not hooks)
+
+**Example:**
+
+```typescript
+export function UsersList() {
+  // 1. React hooks
+  const [search, setSearch] = useState('');
+
+  // 2. Custom hooks
+  const debouncedSearch = useDebounce(search, 300);
+
+  // 3. Data hooks
+  const { data, isLoading } = useUsers({ search: debouncedSearch });
+  const { mutate: deleteUser } = useDeleteUser();
+
+  // 4. Derived values
+  const userCount = useMemo(() => data?.total ?? 0, [data]);
+
+  // 5. Event handlers
+  function handleDelete(id: string) {
+    deleteUser(id);
+  }
+
+  // 6. Render
+  return <div>...</div>;
+}
+```
+
+**Why this order?**
+
+- Makes components easier to scan and understand
+- Groups related logic together
+- Follows natural data flow (state → processing → actions → render)
+
+## TypeScript
+
+- Enable strict mode (already configured)
+- Avoid `any` - use `unknown` if type is truly unknown
+- Define explicit return types for functions when not obvious
+- Use type inference when the type is clear from context
+- Prefer `interface` over `type` for object shapes
+- Use `type` for unions, intersections, and utility types
+
+## Comments
+
+- Use JSDoc for function/component documentation
+- Inline comments for complex logic only
+- Avoid obvious comments
+- Comment the "why", not the "what"
+
+```typescript
+/**
+ * Formats a date string using the specified format
+ * @param date - ISO date string or Date object
+ * @param format - date-fns format string
+ * @returns Formatted date string or '-' if invalid
+ */
+export function formatDate(date: string | Date, format: string): string {
+  // ...
+}
+```

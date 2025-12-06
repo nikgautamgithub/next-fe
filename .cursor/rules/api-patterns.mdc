@@ -1,0 +1,278 @@
+---
+description: API communication patterns and best practices
+globs: ['src/lib/api/**/*', 'src/lib/hooks/**/*', 'app/api/**/*']
+alwaysApply: false
+---
+
+# API Communication Patterns
+
+## API Client Configuration
+
+### Axios Instance Setup
+
+Located in `src/lib/api/client.ts`:
+
+- Single axios instance for all API calls
+- Base URL from environment variable
+- Timeout: 30 seconds
+- `withCredentials: true` for JWT cookie handling
+- Request/response interceptors attached
+
+**Never create new axios instances** - always use the configured `apiClient`.
+
+```typescript
+import apiClient from '@/lib/api/client';
+
+// Good
+const { data } = await apiClient.get('/users');
+
+// Bad - don't do this
+import axios from 'axios';
+const { data } = await axios.get('http://localhost:8000/users');
+```
+
+## API Endpoints
+
+### Centralized Endpoint Constants
+
+All API endpoints defined in `src/lib/api/endpoints.ts`:
+
+```typescript
+export const API_ENDPOINTS = {
+  AUTH: {
+    LOGIN: '/auth/login',
+    LOGOUT: '/auth/logout',
+    ME: '/auth/me',
+  },
+  USERS: {
+    LIST: '/users',
+    DETAIL: (id: string) => `/users/${id}`,
+    CREATE: '/users',
+    UPDATE: (id: string) => `/users/${id}`,
+    DELETE: (id: string) => `/users/${id}`,
+  },
+} as const;
+```
+
+**Rules:**
+
+- Group by resource (AUTH, USERS, JOBS, etc.)
+- Use functions for dynamic segments
+- Never hardcode endpoint strings in components or hooks
+- Mark as `const` for type safety
+
+## Proxy Pattern
+
+### Next.js API Routes as Proxy
+
+**Critical: Never call FastAPI directly from client**
+
+All API calls go through Next.js API routes first:
+
+- Client calls `/api/users` (Next.js)
+- Next.js forwards to `http://fastapi-backend/users`
+- Cookies are forwarded automatically
+- Response returned to client
+
+This is implemented in `app/api/[...path]/route.ts`.
+
+### Why Use Proxy?
+
+1. **Security**: Hides actual backend URL
+2. **Flexibility**: Can change backend without changing client
+3. **Cookie Handling**: Simplifies JWT cookie management
+4. **Error Transformation**: Standardize error responses
+
+## Request/Response Interceptors
+
+### Request Interceptor
+
+Located in `src/lib/api/interceptors.ts`:
+
+- Adds request ID for debugging (dev only)
+- Logs outgoing requests (dev only)
+- Can add custom headers
+
+### Response Interceptor
+
+- Logs responses (dev only)
+- Transforms data if needed
+- Error handling:
+  - 401: Redirect to login
+  - 403: Log permission denied
+  - 500: Log server error
+  - Transforms to standard `ApiError` format
+
+## Type Definitions
+
+### API Response Types
+
+Define all API types in `src/types/api/`:
+
+```typescript
+// Common types
+export interface PaginatedResponse<T> {
+  data: T[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  message: string;
+  data: T;
+}
+
+export interface ApiError {
+  success: false;
+  message: string;
+  code?: string;
+  details?: Record<string, any>;
+}
+
+// Resource-specific types
+export interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: UserRole;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateUserPayload {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  role?: UserRole;
+}
+```
+
+## TanStack Query Integration
+
+### Query Hook Pattern
+
+```typescript
+export function useUsers(
+  filters: UserFilters = {},
+  options?: Omit<UseQueryOptions<PaginatedResponse<User>>, 'queryKey' | 'queryFn'>
+) {
+  return useQuery<PaginatedResponse<User>>({
+    queryKey: queryKeys.users.list(filters),
+    queryFn: async () => {
+      const { data } = await apiClient.get(API_ENDPOINTS.USERS.LIST, {
+        params: filters,
+      });
+      return data;
+    },
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    ...options,
+  });
+}
+```
+
+### Mutation Hook Pattern
+
+```typescript
+export function useCreateUser(
+  options?: Omit<UseMutationOptions<User, ApiError, CreateUserPayload>, 'mutationFn'>
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation<User, ApiError, CreateUserPayload>({
+    mutationFn: async (payload) => {
+      const { data } = await apiClient.post(API_ENDPOINTS.USERS.CREATE, payload);
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() });
+      toast.success('User created successfully');
+    },
+    onError: (error) => {
+      toast.error('Failed to create user', {
+        description: error.message,
+      });
+    },
+    ...options,
+  });
+}
+```
+
+## Error Handling Best Practices
+
+### In Hooks
+
+- Always show toast notifications for mutations
+- Transform backend errors to user-friendly messages
+- Include error details when helpful
+
+### In Components
+
+- Use isError and error from query hooks
+- Display appropriate error UI
+- Provide retry actions when applicable
+
+```typescript
+const { data, isLoading, isError, error } = useUsers(filters);
+
+if (isError) {
+  return (
+    <ErrorState
+      title="Failed to load users"
+      message={error?.message}
+      onRetry={() => refetch()}
+    />
+  );
+}
+```
+
+## Authentication
+
+### JWT Cookie Pattern
+
+- Backend sets HTTP-only cookie on login
+- Cookie automatically sent with all requests (withCredentials: true)
+- No manual token management needed in frontend
+- Logout clears the cookie
+
+### Auth Check
+
+```typescript
+export function useAuthUser() {
+  return useQuery({
+    queryKey: queryKeys.auth.me,
+    queryFn: async () => {
+      const { data } = await apiClient.get(API_ENDPOINTS.AUTH.ME);
+      return data;
+    },
+    retry: false, // Don't retry auth requests
+  });
+}
+```
+
+## Caching Strategy
+
+### Query Configuration
+
+- **staleTime**: 5 minutes (how long data is considered fresh)
+- **gcTime**: 10 minutes (how long unused data stays in cache)
+- **retry**: 3 attempts with exponential backoff
+- **refetchOnWindowFocus**: false (avoid unnecessary requests)
+
+### When to Invalidate
+
+- After mutations: Invalidate related queries
+- On manual refresh: User-initiated
+- After auth state change: Clear all caches
+
+```typescript
+// After creating a user
+queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() });
+
+// After logout
+queryClient.clear();
+```

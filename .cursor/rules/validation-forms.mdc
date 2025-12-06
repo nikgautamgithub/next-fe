@@ -1,0 +1,324 @@
+---
+description: Form validation and Zod schema patterns
+globs: ['src/lib/schemas/**/*', '**/*form*.tsx']
+alwaysApply: false
+---
+
+# Form Validation & Zod Schemas
+
+## Zod Schema Organization
+
+### File Structure
+
+All schemas in `src/lib/schemas/`:
+
+- `auth.schemas.ts` - Authentication schemas (login, register, reset password)
+- `user.schemas.ts` - User management schemas
+- `{feature}.schemas.ts` - Feature-specific schemas
+- `index.ts` - Central export
+
+### Schema Naming Convention
+
+- Schema: `{action}{Resource}Schema` (e.g., `loginSchema`, `createUserSchema`)
+- Inferred Type: `{Action}{Resource}FormData` (e.g., `LoginFormData`, `CreateUserFormData`)
+
+```typescript
+export const loginSchema = z.object({
+  email: z.string().min(1, 'Email is required').email(),
+  password: z.string().min(1, 'Password is required'),
+});
+
+export type LoginFormData = z.infer<typeof loginSchema>;
+```
+
+## Common Validation Patterns
+
+### Email Validation
+
+```typescript
+email: z.string()
+  .min(1, 'Email is required')
+  .email('Please enter a valid email address')
+  .toLowerCase()
+  .trim();
+```
+
+### Password Validation (Strong)
+
+```typescript
+password: z.string()
+  .min(8, 'Password must be at least 8 characters')
+  .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+  .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+  .regex(/[0-9]/, 'Password must contain at least one number')
+  .regex(/[!@#$%^&*]/, 'Password must contain at least one special character (!@#$%^&*)');
+```
+
+### Password Confirmation
+
+```typescript
+const schema = z
+  .object({
+    password: z.string().min(8),
+    confirmPassword: z.string().min(1, 'Please confirm your password'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'], // Error shown on confirmPassword field
+  });
+```
+
+### Enum Validation
+
+```typescript
+import { UserRole } from '@/types/api/user.types';
+
+role: z.nativeEnum(UserRole).refine((val) => Object.values(UserRole).includes(val), {
+  message: 'Please select a valid role',
+});
+```
+
+### Optional Fields
+
+```typescript
+// Optional field (can be undefined)
+description: z.string().optional();
+
+// Optional but can be empty string
+description: z.string().optional().or(z.literal(''));
+
+// Trim and make optional
+firstName: z.string().trim().optional();
+```
+
+### URL Validation
+
+```typescript
+website: z.string().url('Please enter a valid URL').optional().or(z.literal(''));
+```
+
+### Phone Number Validation
+
+```typescript
+phone: z.string()
+  .regex(/^\(?([0-9]{3})\)?[-. ]?([0-9]{3})[-. ]?([0-9]{4})$/, 'Invalid phone number')
+  .optional();
+```
+
+### Number Validation
+
+```typescript
+age: z.number().int().positive().min(18, 'Must be at least 18');
+
+price: z.number().positive().min(0).max(1000000);
+
+quantity: z.number().int().positive().default(1);
+```
+
+## React Hook Form Integration
+
+### Basic Setup
+
+```typescript
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { loginSchema, LoginFormData } from '@/lib/schemas';
+
+export function LoginForm() {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginFormData>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
+
+  function onSubmit(data: LoginFormData) {
+    mutation.mutate(data);
+  }
+
+  return (
+    <form onSubmit={handleSubmit(onSubmit)}>
+      {/* form fields */}
+    </form>
+  );
+}
+```
+
+### Form Field Pattern
+
+```typescript
+<div className="space-y-2">
+  <Label htmlFor="email">Email</Label>
+  <Input
+    id="email"
+    type="email"
+    placeholder="john.doe@example.com"
+    autoComplete="email"
+    disabled={isSubmitting}
+    {...register('email')}
+  />
+  {errors.email && (
+    <p className="text-destructive text-sm">{errors.email.message}</p>
+  )}
+</div>
+```
+
+### Dynamic Validation
+
+```typescript
+const schema = z
+  .object({
+    type: z.enum(['user', 'admin']),
+    permissions: z.array(z.string()).optional(),
+  })
+  .refine(
+    (data) => {
+      // Admin must have permissions
+      if (data.type === 'admin') {
+        return data.permissions && data.permissions.length > 0;
+      }
+      return true;
+    },
+    {
+      message: 'Admin users must have at least one permission',
+      path: ['permissions'],
+    }
+  );
+```
+
+## Shadcn Form Component
+
+### Using Form Components
+
+```typescript
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+
+<Form {...form}>
+  <form onSubmit={form.handleSubmit(onSubmit)}>
+    <FormField
+      control={form.control}
+      name="email"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>Email</FormLabel>
+          <FormControl>
+            <Input placeholder="john.doe@example.com" {...field} />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  </form>
+</Form>
+```
+
+## Create vs Update Schemas
+
+### Create Schema (All Required)
+
+```typescript
+export const createUserSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+  firstName: z.string().min(1),
+  lastName: z.string().min(1),
+  role: z.nativeEnum(UserRole),
+});
+
+export type CreateUserFormData = z.infer<typeof createUserSchema>;
+```
+
+### Update Schema (All Optional)
+
+```typescript
+export const updateUserSchema = z.object({
+  email: z.string().email().optional(),
+  password: z.string().min(8).optional().or(z.literal('')),
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().min(1).optional(),
+  role: z.nativeEnum(UserRole).optional(),
+});
+
+export type UpdateUserFormData = z.infer<typeof updateUserSchema>;
+```
+
+## Common Schema Patterns
+
+### Search/Filter Schema
+
+```typescript
+export const userFilterSchema = z.object({
+  search: z.string().optional(),
+  role: z.nativeEnum(UserRole).optional(),
+  page: z.number().int().positive().optional(),
+  limit: z.number().int().positive().max(100).optional(),
+});
+```
+
+### Date Range Schema
+
+```typescript
+export const dateRangeSchema = z
+  .object({
+    startDate: z.string().optional(),
+    endDate: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.startDate && data.endDate) {
+        return new Date(data.startDate) <= new Date(data.endDate);
+      }
+      return true;
+    },
+    {
+      message: 'End date must be after start date',
+      path: ['endDate'],
+    }
+  );
+```
+
+## Error Messages
+
+### Best Practices
+
+- Be specific and actionable
+- Use consistent tone (imperative)
+- Avoid technical jargon
+- Include examples when helpful
+
+```typescript
+// Good
+email: z.string().email('Please enter a valid email address');
+password: z.string().min(8, 'Password must be at least 8 characters');
+
+// Bad
+email: z.string().email('Invalid');
+password: z.string().min(8, 'Too short');
+```
+
+### Field-Level Errors
+
+Show errors immediately under the field with clear styling:
+
+```typescript
+{errors.email && (
+  <p className="text-destructive text-sm">{errors.email.message}</p>
+)}
+```
+
+### Form-Level Errors
+
+For errors that apply to the whole form:
+
+```typescript
+{errors.root && (
+  <Alert variant="destructive">
+    <AlertDescription>{errors.root.message}</AlertDescription>
+  </Alert>
+)}
+```

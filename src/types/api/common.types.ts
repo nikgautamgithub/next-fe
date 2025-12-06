@@ -15,7 +15,7 @@ export interface ApiError {
   success: false;
   message: string;
   code?: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 export interface PaginationParams {
@@ -30,5 +30,5 @@ export interface SortParams {
 
 export interface FilterParams {
   search?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }

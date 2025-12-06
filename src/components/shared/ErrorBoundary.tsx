@@ -2,15 +2,15 @@
 
 import { Component, ReactNode } from 'react';
 import { AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import {
+  Button,
   Card,
   CardContent,
   CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from '@/components/ui';
 
 interface ErrorBoundaryProps {
   children: ReactNode;

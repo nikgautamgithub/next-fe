@@ -1,4 +1,4 @@
-import { ApiError } from '@/types/api/common.types';
+import { ApiError } from '@/types/api';
 import { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
 export function requestInterceptor(config: InternalAxiosRequestConfig) {

@@ -1,9 +1,8 @@
-import Link from 'next/link';
+import { PageHeader } from '@/components/shared';
+import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui';
+import { ROUTES } from '@/lib/constants';
 import { ArrowRight, Users } from 'lucide-react';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ROUTES } from '@/lib/constants/routes';
+import Link from 'next/link';
 
 export default function DashboardPage() {
   return (

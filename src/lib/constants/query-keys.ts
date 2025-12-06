@@ -1,4 +1,4 @@
-import { UserFilters } from '@/types/api/user.types';
+import { UserFilters } from '@/types/api';
 
 export const userKeys = {
   all: ['users'] as const,

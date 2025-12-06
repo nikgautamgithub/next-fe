@@ -1,8 +1,7 @@
 import apiClient from '@/lib/api/client';
 import { API_ENDPOINTS } from '@/lib/api/endpoints';
-import { queryKeys } from '@/lib/constants/query-keys';
-import { ApiError, PaginatedResponse } from '@/types/api/common.types';
-import { UpdateUserPayload, User } from '@/types/api/user.types';
+import { queryKeys } from '@/lib/constants';
+import { ApiError, CreateUserPayload, PaginatedResponse, UpdateUserPayload, User } from '@/types/api';
 import { useMutation, UseMutationOptions, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 
@@ -13,6 +12,31 @@ interface UpdateUserVariables {
 
 interface UpdateUserContext {
   previousUser?: User;
+}
+
+export function useCreateUser(
+  options?: Omit<UseMutationOptions<User, ApiError, CreateUserPayload>, 'mutationFn'>
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation<User, ApiError, CreateUserPayload>({
+    mutationFn: async (payload: CreateUserPayload) => {
+      const { data } = await apiClient.post(API_ENDPOINTS.USERS.CREATE, payload);
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() });
+      toast.success('User created successfully', {
+        description: `${data.firstName} ${data.lastName} has been added.`,
+      });
+    },
+    onError: (error) => {
+      toast.error('Failed to create user', {
+        description: error.message || 'An unexpected error occurred',
+      });
+    },
+    ...options,
+  });
 }
 
 export function useUpdateUser(
@@ -73,6 +97,32 @@ export function useUpdateUser(
     onSettled: (_, __, { id }) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.users.detail(id) });
       queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() });
+    },
+    ...options,
+  });
+}
+
+export function useDeleteUser(
+  options?: Omit<UseMutationOptions<void, ApiError, string>, 'mutationFn'>
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation<void, ApiError, string>({
+    mutationFn: async (id: string) => {
+      await apiClient.delete(API_ENDPOINTS.USERS.DELETE(id));
+    },
+    onSuccess: (_, id) => {
+      queryClient.removeQueries({ queryKey: queryKeys.users.detail(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() });
+
+      toast.success('User deleted successfully', {
+        description: 'The user has been removed from the system.',
+      });
+    },
+    onError: (error) => {
+      toast.error('Failed to delete user', {
+        description: error.message || 'An unexpected error occurred',
+      });
     },
     ...options,
   });

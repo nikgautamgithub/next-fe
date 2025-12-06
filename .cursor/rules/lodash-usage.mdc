@@ -1,0 +1,259 @@
+---
+description: lodash-es usage guidelines and patterns
+alwaysApply: true
+---
+
+# lodash-es Usage Guidelines
+
+## Critical Rules
+
+### 1. MUST Use lodash-es (NOT lodash)
+
+**Always use `lodash-es` for better tree-shaking:**
+
+```typescript
+// Good - lodash-es with named imports
+import { isEmpty, isNil, debounce } from 'lodash-es';
+
+// Bad - regular lodash
+import _ from 'lodash';
+import isEmpty from 'lodash/isEmpty';
+```
+
+### 2. MUST Use Named Imports
+
+Never use default import or import entire library:
+
+```typescript
+// Good
+import { isEmpty, isNil } from 'lodash-es';
+
+// Bad
+import _ from 'lodash-es';
+import * as _ from 'lodash-es';
+```
+
+## When to Use lodash-es
+
+### Use lodash-es For:
+
+**Null/Undefined Safety:**
+
+- `isEmpty()` - Check for empty values (null, undefined, '', [], {})
+- `isNil()` - Check for null or undefined
+
+**Debouncing/Throttling:**
+
+- `debounce()` - Delay function execution
+- `throttle()` - Limit function execution rate
+
+**Deep Operations:**
+
+- `get()` - Safe nested object access
+- `set()` - Safe nested object update
+- `cloneDeep()` - Deep clone objects
+- `merge()` - Deep merge objects
+
+**Complex Transformations:**
+
+- `groupBy()` - Group array items by key
+- `keyBy()` - Convert array to object by key
+- `uniqBy()` - Remove duplicates by key
+- `orderBy()` - Multi-field sorting
+- `partition()` - Split array by condition
+
+**Object Manipulation:**
+
+- `omit()` - Remove properties from object
+- `pick()` - Select properties from object
+- `mapValues()` - Transform object values
+- `mapKeys()` - Transform object keys
+
+### Use Native JavaScript For:
+
+**Simple Array Operations:**
+
+- `map()`, `filter()`, `reduce()`, `forEach()`
+- `find()`, `findIndex()`, `some()`, `every()`
+- `includes()`, `indexOf()`, `lastIndexOf()`
+- `slice()`, `concat()`, `join()`, `split()`
+
+**Simple Object Operations:**
+
+- `Object.keys()`, `Object.values()`, `Object.entries()`
+- `Object.assign()` for shallow merge
+- Spread operator `{ ...obj }` for shallow clone
+
+**Simple Checks:**
+
+- `Array.isArray()`
+- `typeof` checks
+- Simple `if (value)` checks when appropriate
+
+## Common Patterns
+
+### Null Safety in Formatters
+
+```typescript
+import { isNil, isEmpty, trim, capitalize } from 'lodash-es';
+
+export function formatFullName(
+  firstName: string | null | undefined,
+  lastName: string | null | undefined
+): string {
+  const first = firstName ? capitalize(trim(firstName)) : '';
+  const last = lastName ? capitalize(trim(lastName)) : '';
+
+  if (isEmpty(first) && isEmpty(last)) return '-';
+
+  return trim(`${first} ${last}`);
+}
+
+export function formatCurrency(value: number | null | undefined): string {
+  if (isNil(value)) return '-';
+
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+  }).format(value);
+}
+```
+
+### Debounced Search
+
+```typescript
+import { debounce } from 'lodash-es';
+import { useMemo } from 'react';
+
+export function SearchInput() {
+  const [search, setSearch] = useState('');
+
+  const debouncedSearch = useMemo(
+    () => debounce((value: string) => {
+      // Perform search
+    }, 300),
+    []
+  );
+
+  return <input onChange={(e) => debouncedSearch(e.target.value)} />;
+}
+```
+
+### Safe Nested Access
+
+```typescript
+import { get } from 'lodash-es';
+
+// Instead of optional chaining for dynamic paths
+const value = get(user, 'profile.settings.notifications.email', false);
+
+// Optional chaining is fine for static paths
+const email = user?.profile?.email;
+```
+
+### Data Transformation
+
+```typescript
+import { groupBy, uniqBy, orderBy } from 'lodash-es';
+
+// Group users by role
+const usersByRole = groupBy(users, 'role');
+
+// Remove duplicate users by email
+const uniqueUsers = uniqBy(users, 'email');
+
+// Sort by multiple fields
+const sortedUsers = orderBy(users, ['role', 'lastName'], ['asc', 'asc']);
+```
+
+### Object Filtering
+
+```typescript
+import { omit, pick } from 'lodash-es';
+
+// Remove sensitive fields before logging
+const safeUser = omit(user, ['password', 'token']);
+
+// Extract only needed fields
+const userSummary = pick(user, ['id', 'email', 'name']);
+```
+
+## Validation Helpers
+
+```typescript
+import { isEmpty, isNil } from 'lodash-es';
+
+export const validators = {
+  required: (value: unknown): boolean => {
+    return !isNil(value) && !isEmpty(value);
+  },
+
+  email: (email: string): boolean => {
+    if (isEmpty(email) || isNil(email)) return false;
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  },
+};
+```
+
+## Performance Considerations
+
+### Import Only What You Need
+
+Tree-shaking works automatically with named imports from lodash-es.
+
+### Memoize Debounced/Throttled Functions
+
+Always wrap debounce/throttle in useMemo or useCallback:
+
+```typescript
+// Good
+const handleSearch = useMemo(
+  () =>
+    debounce((query: string) => {
+      // search logic
+    }, 300),
+  []
+);
+
+// Bad - creates new debounced function on every render
+const handleSearch = debounce((query: string) => {
+  // search logic
+}, 300);
+```
+
+## Common Mistakes to Avoid
+
+### ❌ Don't Use Regular lodash
+
+```typescript
+// Wrong
+import { isEmpty } from 'lodash';
+```
+
+### ❌ Don't Use Default Import
+
+```typescript
+// Wrong
+import _ from 'lodash-es';
+_.isEmpty(value);
+```
+
+### ❌ Don't Use lodash for Simple Operations
+
+```typescript
+// Wrong - use native
+import { map } from 'lodash-es';
+const names = map(users, 'name');
+
+// Right - use native
+const names = users.map((u) => u.name);
+```
+
+### ✅ Do Use for Complex Operations
+
+```typescript
+// Good - complex transformation
+import { groupBy, mapValues } from 'lodash-es';
+
+const userStats = mapValues(groupBy(users, 'role'), (group) => group.length);
+```

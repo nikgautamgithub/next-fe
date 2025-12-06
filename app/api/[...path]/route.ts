@@ -1,5 +1,5 @@
+import axios, { AxiosError } from 'axios';
 import { NextRequest, NextResponse } from 'next/server';
-import axios from 'axios';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -22,7 +22,7 @@ async function forwardRequest(
       headers['Cookie'] = cookies;
     }
 
-    let body: any = null;
+    let body: unknown = null;
     if (method !== 'GET' && method !== 'HEAD') {
       const contentType = request.headers.get('content-type');
 
@@ -62,19 +62,19 @@ async function forwardRequest(
     }
 
     return nextResponse;
-  } catch (error: any) {
-    if (process.env.NODE_ENV === 'development') {
-      console.error(`[API Proxy Error] ${method} /${path}`, {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-      });
-    }
+  } catch (error) {
+    const axiosError = error as AxiosError;
 
-    const status = error.response?.status || 500;
-    const data = error.response?.data || {
+    console.error(`[API Proxy Error] ${method} /${path}`, {
+      message: axiosError.message,
+      response: axiosError.response?.data,
+      status: axiosError.response?.status,
+    });
+
+    const status = axiosError.response?.status || 500;
+    const data = axiosError.response?.data || {
       success: false,
-      message: error.message || 'An unexpected error occurred',
+      message: axiosError.message || 'An unexpected error occurred',
       data: null,
     };
 

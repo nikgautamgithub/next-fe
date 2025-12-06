@@ -1,11 +1,11 @@
 'use client';
 
+import { Button } from '@/components/ui';
+import { ROUTES } from '@/lib/constants';
+import { cn } from '@/lib/utils';
+import { Home, Settings, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Users, Settings } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { ROUTES } from '@/lib/constants/routes';
-import { Button } from '@/components/ui/button';
 
 const navigation = [
   { name: 'Dashboard', href: ROUTES.DASHBOARD.HOME, icon: Home },
@@ -16,7 +16,7 @@ export function AppHeader() {
   const pathname = usePathname();
 
   return (
-    <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur">
+    <header className="bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur">
       <div className="container flex h-14 items-center">
         <div className="mr-4 flex">
           <Link href={ROUTES.DASHBOARD.HOME} className="mr-6 flex items-center space-x-2">

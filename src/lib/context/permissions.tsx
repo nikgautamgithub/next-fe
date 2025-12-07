@@ -1,69 +1,52 @@
 'use client';
 
-import { PermissionContextValue } from '@/types/permissions.types';
 import { decodeToken, getTokenFromCookie } from '@/lib/utils/jwt';
-import { createContext, ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
+import { PermissionContextValue } from '@/types/permissions.types';
+import { createContext, ReactNode, useCallback, useMemo, useState } from 'react';
 
 const PermissionContext = createContext<PermissionContextValue | undefined>(undefined);
 
 interface PermissionProviderProps {
-	children: ReactNode;
+  children: ReactNode;
+}
+
+function getPermissionsFromToken(): Set<string> {
+  const token = getTokenFromCookie();
+  if (!token) {
+    return new Set();
+  }
+
+  const payload = decodeToken(token);
+  if (payload?.permissions && Array.isArray(payload.permissions)) {
+    return new Set(payload.permissions);
+  }
+
+  return new Set();
 }
 
 export function PermissionProvider({ children }: PermissionProviderProps) {
-	const [permissionsSet, setPermissionsSet] = useState<Set<string>>(new Set());
-	const [isLoading, setIsLoading] = useState(true);
+  const [permissionsSet] = useState<Set<string>>(getPermissionsFromToken);
 
-	const loadPermissions = useCallback(() => {
-		setIsLoading(true);
+  const hasPermission = useCallback(
+    (permission: string): boolean => {
+      if (!permission) {
+        return false;
+      }
+      return permissionsSet.has(permission);
+    },
+    [permissionsSet]
+  );
 
-		const token = getTokenFromCookie();
-		if (!token) {
-			setPermissionsSet(new Set());
-			setIsLoading(false);
-			return;
-		}
+  const value = useMemo<PermissionContextValue>(
+    () => ({
+      permissions: permissionsSet,
+      hasPermission,
+      isLoading: false,
+    }),
+    [permissionsSet, hasPermission]
+  );
 
-		const payload = decodeToken(token);
-		if (payload?.permissions && Array.isArray(payload.permissions)) {
-			setPermissionsSet(new Set(payload.permissions));
-		} else {
-			setPermissionsSet(new Set());
-		}
-
-		setIsLoading(false);
-	}, []);
-
-	useEffect(() => {
-		loadPermissions();
-
-		// Re-check permissions periodically (every 5 seconds) in case token changed
-		const interval = setInterval(loadPermissions, 5000);
-
-		return () => clearInterval(interval);
-	}, [loadPermissions]);
-
-	const hasPermission = useCallback(
-		(permission: string): boolean => {
-			if (!permission || permissionsSet.size === 0) {
-				return false;
-			}
-			return permissionsSet.has(permission);
-		},
-		[permissionsSet]
-	);
-
-	const value = useMemo<PermissionContextValue>(
-		() => ({
-			permissions: permissionsSet,
-			hasPermission,
-			isLoading,
-		}),
-		[permissionsSet, hasPermission, isLoading]
-	);
-
-	return <PermissionContext.Provider value={value}>{children}</PermissionContext.Provider>;
+  return <PermissionContext.Provider value={value}>{children}</PermissionContext.Provider>;
 }
 
 export { PermissionContext };
-
